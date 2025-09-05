@@ -8,8 +8,7 @@ const countSelect = document.getElementById('count-select');
 const ratioSelect = document.getElementById('ratio-select');
 
 const gridGallary = document.querySelector('.gallery-grid');
-
-const API_KEY = '***REMOVED***'; // Hugging Face API KEY
+// API key is hidden on backend
 
 const examplePrompts = [
   'A magic forest with glowing plants and fairy homes among giant mushrooms',
@@ -94,35 +93,25 @@ const generateImages = async (
   aspectRatio,
   promptText
 ) => {
-  const MODEL_URL = `https://api-inference.huggingface.co/models/${selectedModel}`;
   const { width, height } = getImageDimensions(aspectRatio);
   generateBtn.setAttribute('disabled', 'true');
 
-  // Create an array of image generation promises
   const imagePromises = Array.from({ length: imageCount }, async (_, i) => {
-    // Send request to the AI model API
     try {
-      const response = await fetch(MODEL_URL, {
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          'Content-Type': 'application/json',
-          'x-use-cache': 'false',
-        },
+      const response = await fetch('/api/generate', {
+        // frontend call to backend
         method: 'POST',
-        body: JSON.stringify({
-          inputs: promptText,
-          parameters: { width, height },
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText, width, height }),
       });
 
-      if (!response.ok) throw new Error((await response.json())?.error);
+      if (!response.ok) throw new Error((await response.json()).error);
 
-      // Convert response to an image URL and update the image card
       const result = await response.blob();
       updateImageCard(i, URL.createObjectURL(result));
     } catch (error) {
       console.log(error);
-      const imgCard = document.getElementById(`img-card-${imgIndex}`);
+      const imgCard = document.getElementById(`img-card-${i}`);
       imgCard.classList.replace('loading', 'error');
       imgCard.querySelector('.status-text').textContent = 'Generation failed!';
     }
